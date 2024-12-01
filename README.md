@@ -7,7 +7,7 @@ This extension to Sphinx [autodoc](https://www.sphinx-doc.org/en/master/usage/ex
 1. Ensure that you have type hints in all your classes, functions and methods.
 2. Add description to your classes, functions and methods as a doc-string.
 3. Use `:param name: text` to assign a description to member variables and function parameters.
-4. Register `DocstringProcessor` to the event `autodoc-process-docstring` in Sphinx's `conf.py`.
+4. Register `Processor` to the events `autodoc-process-docstring` and `autodoc-before-process-signature` in Sphinx's `conf.py`.
 5. Enjoy how type information is automatically injected in the doc-string on `make html`.
 
 ## Motivation
@@ -49,3 +49,12 @@ def send_message(
     :returns: The message identifier.
     """
 ```
+
+## Features
+
+* Data-class member variables are published if they have a corresponding `:param ...:` in the class-level doc-string.
+* All enumeration members are published, even if they lack a description.
+* Magic methods (e.g. `__eq__`) are published if they have a doc-string.
+* Multi-line code blocks in doc-strings are converted to syntax-highlighted monospace text.
+* Primary keys in entity classes have extra visuals (e.g. with a symbol 🔑). See [pysqlsync](https://github.com/hunyadi/pysqlsync) for how to define an entity class (using the `@dataclass` syntax) with a primary key (with the type hint `PrimaryKey[T]`).
+* Type aliases are substituted even if [Postponed Evaluation of Annotations (PEP 563)](https://peps.python.org/pep-0563/) is turned off.

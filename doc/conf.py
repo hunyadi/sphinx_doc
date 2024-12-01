@@ -6,7 +6,7 @@ import sphinx.ext.autodoc
 from sphinx.application import Sphinx
 from strong_typing.core import JsonType
 
-from sphinx_doc.autodoc import DocstringProcessor, skip_member
+from sphinx_doc.autodoc import Processor, skip_member
 
 sys.path.insert(0, os.path.abspath("."))
 
@@ -53,6 +53,7 @@ html_show_copyright = True
 add_module_names = False
 autoclass_content = "class"
 autodoc_class_signature = "separated"
+autodoc_member_order = "bysource"
 autodoc_default_options = {
     "exclude-members": "__init__",
     "member-order": "bysource",
@@ -76,8 +77,7 @@ class json:
 
 
 def setup(app: Sphinx) -> None:
-    app.connect(
-        "autodoc-process-docstring",
-        DocstringProcessor(type_transform={JsonType: json}),
-    )
+    processor = Processor(type_transform={JsonType: json})
+    app.connect("autodoc-process-docstring", processor.process_docstring)
+    app.connect("autodoc-before-process-signature", processor.process_signature)
     app.connect("autodoc-skip-member", skip_member)

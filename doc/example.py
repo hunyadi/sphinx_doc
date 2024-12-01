@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import enum
 import sys
 from dataclasses import dataclass
@@ -7,6 +5,7 @@ from datetime import datetime
 from typing import Union
 
 from pysqlsync.model.key_types import PrimaryKey, Unique
+from strong_typing.auxiliary import int8, int16, uint32, uint64
 from strong_typing.core import JsonType, Schema
 
 if sys.version_info > (3, 10):
@@ -42,6 +41,25 @@ class SampleClass:
     """
     A data-class with several member variables.
 
+    Class doc-strings can include code blocks.
+
+    A code block formatted as HTML:
+
+    ```html
+    <html>
+        <body>
+            <p>A paragraph.</p>
+        </body>
+    </html>
+    ```
+
+    A code block formatted as Python:
+
+    ```python
+    if sys.version_info > (3, 10):
+        SimpleType = bool | int | float | str
+    ```
+
     :param boolean: A member variable of type `bool`.
     :param integer: A member variable of type `int`.
     :param double: A member variable of type `float`.
@@ -75,7 +93,7 @@ class SampleClass:
 
         return self.integer > other.integer
 
-    def to_json(self) -> JsonType:
+    def to_json(self) -> "JsonType":
         """
         Serializes the data to JSON.
 
@@ -84,7 +102,7 @@ class SampleClass:
         ...
 
     @staticmethod
-    def from_json(obj: JsonType) -> "SampleClass":
+    def from_json(obj: "JsonType") -> "SampleClass":
         """
         De-serializes the data from JSON.
 
@@ -107,6 +125,23 @@ class DerivedClass(SampleClass):
     union: SimpleType
     json: JsonType
     schema: Schema
+
+
+@dataclass
+class FixedWidthIntegers:
+    """
+    Fixed-width integers have a compact representation.
+
+    :param integer8: A signed integer of 8 bits.
+    :param integer16: A signed integer of 16 bits.
+    :param unsigned32: An unsigned integer of 32 bits.
+    :param unsigned64: An unsigned integer of 64 bits.
+    """
+
+    integer8: int8
+    integer16: int16
+    unsigned32: uint32
+    unsigned64: uint64
 
 
 @dataclass

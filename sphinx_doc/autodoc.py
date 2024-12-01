@@ -3,6 +3,7 @@ import enum
 import inspect
 import re
 import sys
+import types
 import typing
 from dataclasses import dataclass
 from typing import Annotated, Any, Callable, Optional, TypeVar, Union
@@ -46,7 +47,9 @@ class TypeTransform:
 
     def __call__(self, arg_type: TypeLike) -> TypeLike:
         if isinstance(arg_type, str):
-            raise TypeError("expected: evaluated type; got: `str`")
+            raise TypeError(
+                f"expected: evaluated type; got: `str` with value: {arg_type}"
+            )
 
         mapped_type = self.type_transform.get(
             python_type_to_str(arg_type, use_union_operator=True)
@@ -84,18 +87,20 @@ class MissingFieldError(SphinxError):
 T = TypeVar("T")
 
 
-class DocstringProcessor:
+class Processor:
     """
     Ensures a compact yet comprehensive documentation is generated for classes and enumerations.
 
-    This class should be registered with a call to
+    This class should be registered as follows:
     ```
-    app.connect("autodoc-process-docstring", DocstringProcessor(...))
+    p = Processor(...)
+    app.connect("autodoc-process-docstring", p.process_docstring)
+    app.connect("autodoc-before-process-signature", p.process_signature)
     ```
     """
 
-    symbols: Symbols
-    type_transform: TypeTransform
+    _symbols: Symbols
+    _type_transform: TypeTransform
 
     def __init__(
         self,
@@ -110,19 +115,19 @@ class DocstringProcessor:
         """
 
         if symbols is not None:
-            self.symbols = symbols
+            self._symbols = symbols
         else:
-            self.symbols = Symbols()
+            self._symbols = Symbols()
 
         if type_transform is not None:
-            self.type_transform = TypeTransform(type_transform)
+            self._type_transform = TypeTransform(type_transform)
         else:
-            self.type_transform = TypeTransform()
+            self._type_transform = TypeTransform()
 
     def _python_type_to_str(self, arg_type: TypeLike) -> str:
         """Emits a string representation of a Python type, with substitutions."""
 
-        transformed_type = self.type_transform(arg_type)
+        transformed_type = self._type_transform(arg_type)
         return python_type_to_str(transformed_type, use_union_operator=True)
 
     def _process_object(
@@ -168,7 +173,7 @@ class DocstringProcessor:
 
         return self._python_type_to_str(field_type), text
 
-    def process_class(self, cls: type, lines: list[str]) -> None:
+    def _process_class(self, cls: type, lines: list[str]) -> None:
         """
         Lists all fields of a plain class including field name, type and description string.
 
@@ -183,7 +188,9 @@ class DocstringProcessor:
         }
         self._process_object(cls.__name__, fields, lines, self._transform_field)
 
-    def process_dataclass(self, cls: type[DataclassInstance], lines: list[str]) -> None:
+    def _process_dataclass(
+        self, cls: type[DataclassInstance], lines: list[str]
+    ) -> None:
         """
         Lists all fields of a data-class including field name, type and description string.
 
@@ -218,16 +225,16 @@ class DocstringProcessor:
         # emit an emoji for SQL primary key and unique constraint
         pieces: list[str] = []
         if prop.is_primary:
-            pieces.append(self.symbols.primary_key)
+            pieces.append(self._symbols.primary_key)
         if prop.is_unique:
-            pieces.append(self.symbols.unique_constraint)
+            pieces.append(self._symbols.unique_constraint)
         pieces.append(text)
 
         description = " ".join(pieces)
 
         return field_type, description
 
-    def process_table(self, cls: type[DataclassInstance], lines: list[str]) -> None:
+    def _process_table(self, cls: type[DataclassInstance], lines: list[str]) -> None:
         """
         Lists all fields of an entity that translates to a SQL table.
 
@@ -242,11 +249,11 @@ class DocstringProcessor:
         }
         self._process_object(cls.__name__, fields, lines, self._transform_column)
 
-    def process_function(self, func: Callable[..., Any], lines: list[str]) -> None:
+    def _process_function(self, func: Callable[..., Any], lines: list[str]) -> None:
         params = typing.get_type_hints(func, include_extras=True)
         self._process_object(func.__name__, params, lines, self._transform_field)
 
-    def process_enum(
+    def _process_enum(
         self, cls: type[enum.Enum], options: Options, lines: list[str]
     ) -> None:
         """
@@ -259,7 +266,7 @@ class DocstringProcessor:
         options["undoc-members"] = True
         return
 
-    def process_codeblock(self, lines: list[str]) -> None:
+    def _process_codeblock(self, lines: list[str]) -> None:
         """
         Replaces Markdown-style code blocks with Sphinx-style code blocks.
 
@@ -287,7 +294,7 @@ class DocstringProcessor:
 
         lines[:] = target_lines
 
-    def __call__(
+    def process_docstring(
         self,
         app: Sphinx,
         what: str,
@@ -312,25 +319,60 @@ class DocstringProcessor:
         :param lines: The lines of the docstring.
         """
 
-        self.process_codeblock(lines)
+        self._process_codeblock(lines)
 
         if what == "class":
             cls: type = typing.cast(type, obj)
             if issubclass(cls, enum.Enum):
-                self.process_enum(cls, options, lines)
+                self._process_enum(cls, options, lines)
             elif is_dataclass_type(cls):
                 if dataclass_has_primary_key(cls):
-                    self.process_table(cls, lines)
+                    self._process_table(cls, lines)
                 else:
-                    self.process_dataclass(cls, lines)
+                    self._process_dataclass(cls, lines)
             elif inspect.isclass(cls):
-                self.process_class(cls, lines)
+                self._process_class(cls, lines)
         elif what == "exception":
             exc = typing.cast(type[Exception], obj)
-            self.process_class(exc, lines)
+            self._process_class(exc, lines)
         elif what in ["function", "method"]:
             func = typing.cast(Callable[..., Any], obj)
-            self.process_function(func, lines)
+            self._process_function(func, lines)
+
+    def _transform_param(
+        self, param_type: TypeLike, module: types.ModuleType
+    ) -> TypeLike:
+        """
+        Maps type hints for function parameters.
+
+        :param param_type: The parameter type (including forward references) to transform.
+        :param module: The context in which to evaluate types.
+        """
+
+        param_type = evaluate_type(param_type, module)
+        if isinstance(param_type, str):
+            # may hit this path with `from __future__ import annotations`
+            param_type = evaluate_type(param_type, module)
+        return self._type_transform(param_type)
+
+    def process_signature(
+        self, app: Sphinx, obj: types.FunctionType, bound_method: bool
+    ) -> None:
+        """
+        Ensures a compact yet comprehensive documentation is generated for functions and bound functions.
+
+        The parameters are passed by `autodoc` in Sphinx.
+
+        :param app: The Sphinx application object.
+        :param obj: The function object itself.
+        :param bound_method: True if the object is a bound method, False otherwise.
+        """
+
+        module = sys.modules[obj.__module__]
+        obj.__annotations__.update(
+            (name, self._transform_param(param_type, module))
+            for name, param_type in obj.__annotations__.items()
+        )
 
 
 def process_docstring(
@@ -345,8 +387,8 @@ def process_docstring(
     ```
     """
 
-    processor = DocstringProcessor()
-    processor(app, what, name, obj, options, lines)
+    processor = Processor()
+    processor.process_docstring(app, what, name, obj, options, lines)
 
 
 def skip_member(
