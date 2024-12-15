@@ -12,7 +12,7 @@ from pysqlsync.formation.inspection import dataclass_has_primary_key
 from pysqlsync.model.properties import FieldProperties, get_field_properties
 from sphinx.application import Sphinx
 from sphinx.errors import SphinxError
-from sphinx.ext.autodoc import Options
+from sphinx.ext.autodoc import ClassDocumenter, Options
 from strong_typing.inspection import (
     DataclassInstance,
     TypeLike,
@@ -391,7 +391,7 @@ def process_docstring(
     processor.process_docstring(app, what, name, obj, options, lines)
 
 
-def skip_member(
+def include_special(
     app: Sphinx, what: str, name: str, obj: object, skip: bool, options: Options
 ) -> Optional[bool]:
     """
@@ -399,7 +399,7 @@ def skip_member(
 
     This function should be registered with a call to
     ```
-    app.connect("autodoc-skip-member", skip_member)
+    app.connect("autodoc-skip-member", include_special)
     ```
 
     This function implements a callback for ``autodoc-skip-member`` events to
@@ -423,3 +423,12 @@ def skip_member(
             return False
 
     return None
+
+
+class MockedClassDocumenter(ClassDocumenter):
+    "Removes the uninformative declaration that a class derives from the Python superclass `object`."
+
+    def add_line(self, line: str, source: str, *lineno: int) -> None:
+        if line == "   Bases: :py:class:`object`":
+            return
+        super().add_line(line, source, *lineno)

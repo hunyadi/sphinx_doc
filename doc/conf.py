@@ -6,7 +6,7 @@ import sphinx.ext.autodoc
 from sphinx.application import Sphinx
 from strong_typing.core import JsonType
 
-from sphinx_doc.autodoc import Processor, skip_member
+from sphinx_doc.autodoc import MockedClassDocumenter, Processor, include_special
 
 sys.path.insert(0, os.path.abspath("."))
 
@@ -62,13 +62,6 @@ autodoc_default_options = {
 autodoc_typehints = "signature"
 
 
-class MockedClassDocumenter(sphinx.ext.autodoc.ClassDocumenter):
-    def add_line(self, line: str, source: str, *lineno: int) -> None:
-        if line == "   Bases: :py:class:`object`":
-            return
-        super().add_line(line, source, *lineno)
-
-
 sphinx.ext.autodoc.ClassDocumenter = MockedClassDocumenter  # type: ignore
 
 
@@ -80,4 +73,4 @@ def setup(app: Sphinx) -> None:
     processor = Processor(type_transform={JsonType: json})
     app.connect("autodoc-process-docstring", processor.process_docstring)
     app.connect("autodoc-before-process-signature", processor.process_signature)
-    app.connect("autodoc-skip-member", skip_member)
+    app.connect("autodoc-skip-member", include_special)

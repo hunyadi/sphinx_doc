@@ -9,8 +9,25 @@ Refer to the [Sphinx HTML output](https://hunyadi.github.io/sphinx_doc/) for a l
 1. Ensure that you have type hints in all your classes, functions and methods.
 2. Add description to your classes, functions and methods as a doc-string.
 3. Use `:param name: text` to assign a description to member variables and function parameters.
-4. Register `Processor` to the events `autodoc-process-docstring` and `autodoc-before-process-signature` in Sphinx's `conf.py`.
+4. Register `Processor` to the events `autodoc-process-docstring` and `autodoc-before-process-signature`.
 5. Enjoy how type information is automatically injected in the doc-string on `make html`.
+
+## Minimalistic example
+
+The following code shows how to hook `Processor` to the events `autodoc-process-docstring` and `autodoc-before-process-signature` in Sphinx's `conf.py`:
+
+```python
+from sphinx.application import Sphinx
+from sphinx_doc.autodoc import Processor, include_special
+
+def setup(app: Sphinx) -> None:
+    processor = Processor()
+    app.connect("autodoc-process-docstring", processor.process_docstring)
+    app.connect("autodoc-before-process-signature", processor.process_signature)
+    app.connect("autodoc-skip-member", include_special)
+```
+
+Refer to the [published sample](https://github.com/hunyadi/sphinx_doc/blob/master/doc/conf.py) for a more detailed example how to use this extension with Sphinx.
 
 ## Motivation
 
