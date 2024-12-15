@@ -29,6 +29,14 @@ def setup(app: Sphinx) -> None:
 
 Refer to the [published sample](https://github.com/hunyadi/sphinx_doc/blob/master/doc/conf.py) for a more detailed example how to use this extension with Sphinx.
 
+## Installation
+
+This package is [published to PyPI](https://pypi.org/project/python-sphinx-doc/).
+
+```sh
+pip install --upgrade python-sphinx-doc
+```
+
 ## Motivation
 
 To pass type information to `autodoc`, you would normally be required to use the [info field list](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists) items `:param:` and/or `:type:` with explicit type specification:
