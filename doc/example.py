@@ -16,8 +16,14 @@ else:
 
 @enum.unique
 class EnumType(enum.Enum):
-    active = "active"
+    enabled = "enabled"
+    "Documents the enumeration member `enabled`."
+
     disabled = "disabled"
+    "Documents the enumeration member `disabled`."
+
+    active = "active"
+    inactive = "inactive"
 
 
 class MyException(Exception):

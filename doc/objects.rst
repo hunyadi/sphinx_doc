@@ -6,8 +6,18 @@
 Types in the module
 -------------------
 
-This page showcases classes and functions extracted from the module
+This section showcases classes and types extracted from the module
 `example <https://github.com/hunyadi/sphinx_doc/blob/master/doc/example.py>`_.
 
 .. automodule:: example
-   :members: EnumType, MyException, PlainClass, SampleClass, DerivedClass, FixedWidthIntegers, LookupTable, EntityTable, send_message
+   :members: EnumType, MyException, PlainClass, SampleClass, DerivedClass, FixedWidthIntegers, LookupTable, EntityTable
+
+
+Functions in the module
+-----------------------
+
+This section showcases functions extracted from the module
+`example <https://github.com/hunyadi/sphinx_doc/blob/master/doc/example.py>`_.
+
+.. automodule:: example
+   :members: send_message

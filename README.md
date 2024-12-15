@@ -2,6 +2,8 @@
 
 This extension to Sphinx [autodoc](https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html) enriches class member variable and function parameter lists with type information extracted from Python type annotations.
 
+Refer to the [Sphinx HTML output](https://hunyadi.github.io/sphinx_doc/) for a live demonstration.
+
 ## Usage
 
 1. Ensure that you have type hints in all your classes, functions and methods.
